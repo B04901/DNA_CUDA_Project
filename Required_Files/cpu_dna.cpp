@@ -4,7 +4,6 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
-#include <vector>
 
 using namespace std;
 
@@ -100,68 +99,6 @@ SearchResult bruteForceSearch(const string& dna, const string& pattern) {
     return result;
 }
 
-// สร้าง LPS (Longest Proper Prefix which is also Suffix) สำหรับ KMP
-vector<size_t> buildLPS(const string& pattern) {
-    vector<size_t> lps(pattern.size(), 0);
-
-    size_t length = 0;
-    size_t i = 1;
-
-    while (i < pattern.size()) {
-        if (pattern[i] == pattern[length]) {
-            ++length;
-            lps[i] = length;
-            ++i;
-        } else if (length != 0) {
-            length = lps[length - 1];
-        } else {
-            lps[i] = 0;
-            ++i;
-        }
-    }
-
-    return lps;
-}
-
-// KMP: ค้นหา Pattern โดยใช้ LPS ลดการเปรียบเทียบซ้ำ
-SearchResult kmpSearch(const string& dna, const string& pattern) {
-    SearchResult result;
-
-    const size_t N = dna.size();
-    const size_t M = pattern.size();
-
-    if (M > N) {
-        return result;
-    }
-
-    const vector<size_t> lps = buildLPS(pattern);
-
-    size_t i = 0; // ตำแหน่งใน DNA
-    size_t j = 0; // ตำแหน่งใน Pattern
-
-    while (i < N) {
-        if (dna[i] == pattern[j]) {
-            ++i;
-            ++j;
-        }
-
-        if (j == M) {
-            ++result.count;
-
-            // รองรับ Pattern ที่พบแบบซ้อนทับกัน
-            j = lps[j - 1];
-        } else if (i < N && dna[i] != pattern[j]) {
-            if (j != 0) {
-                j = lps[j - 1];
-            } else {
-                ++i;
-            }
-        }
-    }
-
-    return result;
-}
-
 template <typename Function>
 double measureTimeMs(Function function, SearchResult& result) {
     const auto start = chrono::steady_clock::now();
@@ -196,7 +133,6 @@ int main(int argc, char* argv[]) {
         cout << "Pattern: " << pattern << "\n";
 
         SearchResult bruteResult;
-        SearchResult kmpResult;
 
         const double bruteTime = measureTimeMs(
             [&]() {
@@ -205,31 +141,14 @@ int main(int argc, char* argv[]) {
             bruteResult
         );
 
-        const double kmpTime = measureTimeMs(
-            [&]() {
-                return kmpSearch(dna, pattern);
-            },
-            kmpResult
-        );
-
         cout << "\n--- CPU Brute Force ---\n";
         cout << "Matches: " << bruteResult.count << "\n";
         cout << "Time: " << fixed << setprecision(3)
              << bruteTime << " ms\n";
 
-        cout << "\n--- CPU KMP ---\n";
-        cout << "Matches: " << kmpResult.count << "\n";
-        cout << "Time: " << fixed << setprecision(3)
-             << kmpTime << " ms\n";
-
-        cout << "\nCorrectness: "
-             << (bruteResult.count == kmpResult.count ? "PASS" : "FAIL")
-             << "\n";
-
-        return bruteResult.count == kmpResult.count ? 0 : 2;
+        return 0;
     } catch (const exception& e) {
         cerr << "Error: " << e.what() << "\n";
         return 1;
     }
 }
-
